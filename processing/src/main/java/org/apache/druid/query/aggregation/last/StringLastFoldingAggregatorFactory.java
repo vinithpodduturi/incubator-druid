@@ -40,7 +40,7 @@ public class StringLastFoldingAggregatorFactory extends StringLastAggregatorFact
       @JsonProperty("maxStringBytes") Integer maxStringBytes
   )
   {
-    super(name, fieldName, maxStringBytes);
+    super(name, fieldName, maxStringBytes, null);
   }
 
   @Override

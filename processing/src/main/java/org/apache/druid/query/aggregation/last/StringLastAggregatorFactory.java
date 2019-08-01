@@ -19,6 +19,8 @@
 
 package org.apache.druid.query.aggregation.last;
 
+
+
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeName;
@@ -49,12 +51,16 @@ public class StringLastAggregatorFactory extends NullableAggregatorFactory<BaseO
   private final String fieldName;
   private final String name;
   protected final int maxStringBytes;
+  // timestamp column to use while comparing stringLast, this is useful when rollup is done wherein __time is not useful
+  // when we want to do stringLast aggregator.
+  private final String tsColumn;
 
   @JsonCreator
   public StringLastAggregatorFactory(
       @JsonProperty("name") String name,
       @JsonProperty("fieldName") final String fieldName,
-      @JsonProperty("maxStringBytes") Integer maxStringBytes
+      @JsonProperty("maxStringBytes") Integer maxStringBytes,
+      @JsonProperty("tsColumn") String tsColumn
   )
   {
     Preconditions.checkNotNull(name, "Must have a valid, non-null aggregator name");
@@ -64,6 +70,19 @@ public class StringLastAggregatorFactory extends NullableAggregatorFactory<BaseO
     this.maxStringBytes = maxStringBytes == null
                           ? StringFirstAggregatorFactory.DEFAULT_MAX_STRING_SIZE
                           : maxStringBytes;
+
+    this.tsColumn = tsColumn == null
+                    ? ColumnHolder.TIME_COLUMN_NAME
+                    : tsColumn;
+  }
+
+  public StringLastAggregatorFactory(
+          String name,
+          final String fieldName,
+          Integer maxStringBytes
+  )
+  {
+    this(name, fieldName, maxStringBytes, null);
   }
 
   @Override
@@ -76,7 +95,7 @@ public class StringLastAggregatorFactory extends NullableAggregatorFactory<BaseO
   public Aggregator factorize(ColumnSelectorFactory metricFactory, BaseObjectColumnValueSelector selector)
   {
     return new StringLastAggregator(
-        metricFactory.makeColumnValueSelector(ColumnHolder.TIME_COLUMN_NAME),
+        metricFactory.makeColumnValueSelector(this.tsColumn),
         selector,
         maxStringBytes
     );
@@ -86,7 +105,7 @@ public class StringLastAggregatorFactory extends NullableAggregatorFactory<BaseO
   public BufferAggregator factorizeBuffered(ColumnSelectorFactory metricFactory, BaseObjectColumnValueSelector selector)
   {
     return new StringLastBufferAggregator(
-        metricFactory.makeColumnValueSelector(ColumnHolder.TIME_COLUMN_NAME),
+        metricFactory.makeColumnValueSelector(this.tsColumn),
         selector,
         maxStringBytes
     );
@@ -119,7 +138,7 @@ public class StringLastAggregatorFactory extends NullableAggregatorFactory<BaseO
   @Override
   public List<AggregatorFactory> getRequiredColumns()
   {
-    return Collections.singletonList(new StringLastAggregatorFactory(fieldName, fieldName, maxStringBytes));
+    return Collections.singletonList(new StringLastAggregatorFactory(fieldName, fieldName, maxStringBytes, tsColumn));
   }
 
   @Override
@@ -154,10 +173,16 @@ public class StringLastAggregatorFactory extends NullableAggregatorFactory<BaseO
     return maxStringBytes;
   }
 
+  @JsonProperty
+  public String getTsColumn()
+  {
+    return tsColumn;
+  }
+
   @Override
   public List<String> requiredFields()
   {
-    return Arrays.asList(ColumnHolder.TIME_COLUMN_NAME, fieldName);
+    return Arrays.asList(tsColumn, fieldName);
   }
 
   @Override
@@ -193,7 +218,8 @@ public class StringLastAggregatorFactory extends NullableAggregatorFactory<BaseO
 
     StringLastAggregatorFactory that = (StringLastAggregatorFactory) o;
 
-    return fieldName.equals(that.fieldName) && name.equals(that.name) && maxStringBytes == that.maxStringBytes;
+    return fieldName.equals(that.fieldName) && name.equals(that.name) && maxStringBytes == that.maxStringBytes
+            && tsColumn.equals(that.tsColumn);
   }
 
   @Override
@@ -209,6 +235,7 @@ public class StringLastAggregatorFactory extends NullableAggregatorFactory<BaseO
            "name='" + name + '\'' +
            ", fieldName='" + fieldName + '\'' +
            ", maxStringBytes=" + maxStringBytes + '\'' +
+           ", tsColumn=" + tsColumn + '\'' +
            '}';
   }
 }
