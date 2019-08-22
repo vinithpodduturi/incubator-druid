@@ -70,7 +70,6 @@ public class StringLastAggregatorFactory extends NullableAggregatorFactory<BaseO
     this.maxStringBytes = maxStringBytes == null
                           ? StringFirstAggregatorFactory.DEFAULT_MAX_STRING_SIZE
                           : maxStringBytes;
-
     this.tsColumn = tsColumn == null
                     ? ColumnHolder.TIME_COLUMN_NAME
                     : tsColumn;
